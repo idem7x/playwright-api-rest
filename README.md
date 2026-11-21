@@ -25,7 +25,7 @@ npx playwright install
 3. Add token to `.env`:
 
 ```env
-GOREST_TOKEN=your_token_here
+GO_REST_API_TOKEN=your_token_here
 LOG_LEVEL=info
 CI=false
 ```
