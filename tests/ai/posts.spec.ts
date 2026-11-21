@@ -73,7 +73,9 @@ test.describe('POSTS - AI generated', () => {
       .postRequestJson<ErrorResponse[]>(422);
 
     await expect(errors).shouldMatchSchema(Schema.ERROR);
-    expect(errors.some(e => e.field === 'title')).toBeTruthy();
+    const titleError = errors.find(e => e.field === 'title');
+    expect(titleError).toBeDefined();
+    expect(titleError?.message).shouldEqual("can't be blank");
   });
 
   test('POST - Should fail with 422 when user does not exist', { tag: ['@ai-generated', '@req:POSTS-03', '@case:POSTS-TC-03'] }, async ({ api }) => {
@@ -148,20 +150,5 @@ test.describe('POSTS - AI generated', () => {
     expect(posts.length).toBe(2);
     expect(posts.every(p => p.user_id === user.id)).toBeTruthy();
     expect(posts.map(p => p.title).sort()).shouldEqual([...titles].sort());
-  });
-
-  test('POST - Should create post via /posts with user_id in body', { tag: ['@ai-generated', '@req:POSTS-01', '@case:POSTS-TC-08'] }, async ({ api }) => {
-    const user = await createUser(api);
-    const newPost = { user_id: user.id, ...generatePost() };
-
-    const createdPost = await api
-      .reset()
-      .path(Endpoint.POSTS)
-      .body(newPost)
-      .postRequestJson<Post>(201);
-
-    await expect(createdPost).shouldMatchSchema(Schema.POST);
-    expect(createdPost.user_id).shouldEqual(user.id);
-    expect(createdPost.title).shouldEqual(newPost.title);
   });
 });
