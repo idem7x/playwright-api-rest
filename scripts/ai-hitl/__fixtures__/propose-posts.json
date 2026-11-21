@@ -1,0 +1,161 @@
+{
+  "description": "Recorded generator output for requirements/posts.md (authored by Claude Code following scripts/ai-hitl/prompts/propose.md). Used by --mock, unit tests and CI dry runs.",
+  "model": "claude-opus-5-5 (recorded fixture)",
+  "cli": {
+    "type": "result",
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 14,
+    "session_id": "mock-propose-posts",
+    "result": {
+      "id": "posts-00000000-0000",
+      "requirementFile": "requirements/posts.md",
+      "model": "claude-opus-5-5 (recorded fixture)",
+      "createdAt": "2026-11-21T23:00:00.000Z",
+      "cases": [
+        {
+          "caseId": "POSTS-TC-01",
+          "title": "POST - Should create post for existing user",
+          "covers": [
+            "POSTS-01"
+          ],
+          "priority": "P0",
+          "rationale": "Creates a fresh user, posts to /users/{id}/posts and checks 201, the post schema, user_id and that title/body are echoed.",
+          "confidence": "high",
+          "openQuestions": [],
+          "automate": true,
+          "specFile": "tests/ai/posts.spec.ts"
+        },
+        {
+          "caseId": "POSTS-TC-02",
+          "title": "POST - Should fail with 422 when title is missing",
+          "covers": [
+            "POSTS-02"
+          ],
+          "priority": "P1",
+          "rationale": "Sends only a body for an existing user and expects a 422 error list containing field \"title\".",
+          "confidence": "high",
+          "openQuestions": [
+            "Should the test also pin the exact message (\"can't be blank\")? It is GoREST wording and may change."
+          ],
+          "automate": true,
+          "specFile": "tests/ai/posts.spec.ts"
+        },
+        {
+          "caseId": "POSTS-TC-03",
+          "title": "POST - Should fail with 422 when user does not exist",
+          "covers": [
+            "POSTS-03"
+          ],
+          "priority": "P1",
+          "rationale": "Posts to /posts with user_id 999999999 and expects 422 with field \"user\" / \"must exist\". No data is created.",
+          "confidence": "high",
+          "openQuestions": [],
+          "automate": true,
+          "specFile": "tests/ai/posts.spec.ts"
+        },
+        {
+          "caseId": "POSTS-TC-04",
+          "title": "POST - Should fail with 401 when unauthorized",
+          "covers": [
+            "POSTS-04"
+          ],
+          "priority": "P0",
+          "rationale": "Same request without the bearer token; expects 401 and an \"Authentication failed\" message. Auth is checked before the user lookup, so no user is needed.",
+          "confidence": "high",
+          "openQuestions": [],
+          "automate": true,
+          "specFile": "tests/ai/posts.spec.ts"
+        },
+        {
+          "caseId": "POSTS-TC-05",
+          "title": "GET - Should retrieve post by ID",
+          "covers": [
+            "POSTS-05"
+          ],
+          "priority": "P1",
+          "rationale": "Creates a post, reads it back via /posts/{id} and compares the whole object plus schema.",
+          "confidence": "high",
+          "openQuestions": [],
+          "automate": true,
+          "specFile": "tests/ai/posts.spec.ts"
+        },
+        {
+          "caseId": "POSTS-TC-06",
+          "title": "GET - Should return 404 for non-existent post",
+          "covers": [
+            "POSTS-06"
+          ],
+          "priority": "P1",
+          "rationale": "GET /posts/999999999 must return 404 with a message, mirroring the existing user 404 test.",
+          "confidence": "high",
+          "openQuestions": [],
+          "automate": true,
+          "specFile": "tests/ai/posts.spec.ts"
+        },
+        {
+          "caseId": "POSTS-TC-07",
+          "title": "GET - Should list only posts of the given user",
+          "covers": [
+            "POSTS-07"
+          ],
+          "priority": "P2",
+          "rationale": "Creates two posts for a fresh user and expects exactly those two from /users/{id}/posts (fresh user = deterministic list).",
+          "confidence": "medium",
+          "openQuestions": [
+            "Two POSTs per run on a rate-limited shared API — is one post enough for this requirement?"
+          ],
+          "automate": true,
+          "specFile": "tests/ai/posts.spec.ts"
+        },
+        {
+          "caseId": "POSTS-TC-08",
+          "title": "POST - Should create post via /posts with user_id in body",
+          "covers": [
+            "POSTS-01"
+          ],
+          "priority": "P0",
+          "rationale": "Covers the alternative endpoint from the requirement header (/posts with user_id in the body).",
+          "confidence": "medium",
+          "openQuestions": [
+            "Is the /posts variant worth a separate test, or is TC-01 enough for POSTS-01?"
+          ],
+          "automate": true,
+          "specFile": "tests/ai/posts.spec.ts"
+        }
+      ],
+      "coverageGaps": [
+        {
+          "requirementId": "POSTS-08",
+          "reason": "Ordering of the global /posts list cannot be asserted deterministically on a shared public API with concurrent writers; recommend a contract test against a private GoREST instance."
+        }
+      ],
+      "revisions": []
+    }
+  },
+  "files": [
+    {
+      "path": "tests/ai/posts.spec.ts",
+      "content": "import { test, expect } from '@fixtures/apiFixtures';\nimport '@utils/customMatchers';\nimport { faker } from '@faker-js/faker';\nimport type { User, ErrorResponse } from '@constants/UserTypes';\nimport type { Post, CreatePostRequest } from '@constants/PostTypes';\nimport { Endpoint } from '@constants/Endpoint';\nimport { Schema } from '@constants/Schema';\nimport { logger } from '@utils/logger';\nimport { DataGenerator } from '@utils/dataGenerator';\nimport type { ApiBuilder } from '@utils/apiBuilder';\n\nconst NON_EXISTENT_ID = 999999999;\n\nconst generatePost = (overrides?: Partial<CreatePostRequest>): CreatePostRequest => ({\n  title: faker.lorem.sentence({ min: 3, max: 6 }),\n  body: faker.lorem.paragraph(),\n  ...overrides,\n});\n\ntest.describe('POSTS - AI generated', () => {\n  // deleting a user cascades to its posts, so users are the only thing we clean up\n  let createdUserIds: number[] = [];\n\n  const createUser = async (api: ApiBuilder): Promise<User> => {\n    const user = await api\n      .reset()\n      .path(Endpoint.USERS)\n      .body(DataGenerator.generateActiveUser())\n      .postRequestJson<User>(201);\n    createdUserIds.push(user.id);\n    return user;\n  };\n\n  test.afterEach(async ({ api }) => {\n    for (const userId of createdUserIds) {\n      try {\n        await api\n          .reset()\n          .path(`${Endpoint.USERS}/${userId}`)\n          .deleteRequest(204);\n      } catch (error) {\n        logger.warn(`Failed to delete user ${userId}:`, error);\n      }\n    }\n    createdUserIds = [];\n  });\n\n  test('POST - Should create post for existing user', { tag: ['@ai-generated', '@req:POSTS-01', '@case:POSTS-TC-01'] }, async ({ api }) => {\n    const user = await createUser(api);\n    const newPost = generatePost();\n\n    const createdPost = await api\n      .reset()\n      .path(`${Endpoint.USERS}/${user.id}/posts`)\n      .body(newPost)\n      .postRequestJson<Post>(201);\n\n    await expect(createdPost).shouldMatchSchema(Schema.POST);\n    expect(createdPost.id).toBeDefined();\n    expect(createdPost.user_id).shouldEqual(user.id);\n    expect(createdPost.title).shouldEqual(newPost.title);\n    expect(createdPost.body).shouldEqual(newPost.body);\n  });\n\n  test('POST - Should fail with 422 when title is missing', { tag: ['@ai-generated', '@req:POSTS-02', '@case:POSTS-TC-02'] }, async ({ api }) => {\n    const user = await createUser(api);\n\n    const errors = await api\n      .reset()\n      .path(`${Endpoint.USERS}/${user.id}/posts`)\n      .body({ body: faker.lorem.paragraph() })\n      .postRequestJson<ErrorResponse[]>(422);\n\n    await expect(errors).shouldMatchSchema(Schema.ERROR);\n    expect(errors.some(e => e.field === 'title')).toBeTruthy();\n  });\n\n  test('POST - Should fail with 422 when user does not exist', { tag: ['@ai-generated', '@req:POSTS-03', '@case:POSTS-TC-03'] }, async ({ api }) => {\n    const errors = await api\n      .path(Endpoint.POSTS)\n      .body({ user_id: NON_EXISTENT_ID, ...generatePost() })\n      .postRequestJson<ErrorResponse[]>(422);\n\n    await expect(errors).shouldMatchSchema(Schema.ERROR);\n    const userError = errors.find(e => e.field === 'user');\n    expect(userError).toBeDefined();\n    expect(userError?.message).shouldContain('must exist');\n  });\n\n  test('POST - Should fail with 401 when unauthorized', { tag: ['@ai-generated', '@req:POSTS-04', '@case:POSTS-TC-04'] }, async ({ api }) => {\n    const response = await api\n      .path(`${Endpoint.USERS}/${NON_EXISTENT_ID}/posts`)\n      .body(generatePost())\n      .withoutAuth()\n      .postRequest(401);\n\n    const body = await response.json();\n    expect(body.message).toBeDefined();\n    expect(body.message.toLowerCase()).shouldContain('authentication');\n  });\n\n  test('GET - Should retrieve post by ID', { tag: ['@ai-generated', '@req:POSTS-05', '@case:POSTS-TC-05'] }, async ({ api }) => {\n    const user = await createUser(api);\n    const createdPost = await api\n      .reset()\n      .path(`${Endpoint.USERS}/${user.id}/posts`)\n      .body(generatePost())\n      .postRequestJson<Post>(201);\n\n    const post = await api\n      .reset()\n      .path(`${Endpoint.POSTS}/${createdPost.id}`)\n      .getRequestJson<Post>(200);\n\n    await expect(post).shouldMatchSchema(Schema.POST);\n    expect(post).shouldEqual(createdPost);\n  });\n\n  test('GET - Should return 404 for non-existent post', { tag: ['@ai-generated', '@req:POSTS-06', '@case:POSTS-TC-06'] }, async ({ api }) => {\n    const response = await api\n      .path(`${Endpoint.POSTS}/${NON_EXISTENT_ID}`)\n      .getRequest(404);\n\n    const body = await response.json();\n    expect(body.message).toBeDefined();\n  });\n\n  test('GET - Should list only posts of the given user', { tag: ['@ai-generated', '@req:POSTS-07', '@case:POSTS-TC-07'] }, async ({ api }) => {\n    const user = await createUser(api);\n    const titles: string[] = [];\n    for (const post of [generatePost(), generatePost()]) {\n      const created = await api\n        .reset()\n        .path(`${Endpoint.USERS}/${user.id}/posts`)\n        .body(post)\n        .postRequestJson<Post>(201);\n      titles.push(created.title);\n    }\n\n    const posts = await api\n      .reset()\n      .path(`${Endpoint.USERS}/${user.id}/posts`)\n      .getRequestJson<Post[]>(200);\n\n    await expect(posts).shouldMatchSchema(Schema.POSTS);\n    expect(posts.length).toBe(2);\n    expect(posts.every(p => p.user_id === user.id)).toBeTruthy();\n    expect(posts.map(p => p.title).sort()).shouldEqual([...titles].sort());\n  });\n\n  test('POST - Should create post via /posts with user_id in body', { tag: ['@ai-generated', '@req:POSTS-01', '@case:POSTS-TC-08'] }, async ({ api }) => {\n    const user = await createUser(api);\n    const newPost = { user_id: user.id, ...generatePost() };\n\n    const createdPost = await api\n      .reset()\n      .path(Endpoint.POSTS)\n      .body(newPost)\n      .postRequestJson<Post>(201);\n\n    await expect(createdPost).shouldMatchSchema(Schema.POST);\n    expect(createdPost.user_id).shouldEqual(user.id);\n    expect(createdPost.title).shouldEqual(newPost.title);\n  });\n});\n"
+    },
+    {
+      "path": "constants/PostTypes.ts",
+      "content": "export type PostData = {\n  title: string;\n  body: string;\n};\n\nexport type Post = PostData & {\n  id: number;\n  user_id: number;\n};\n\nexport type CreatePostRequest = PostData;\nexport type CreatePostWithUserRequest = PostData & { user_id: number };\n"
+    },
+    {
+      "path": "schemas/postSchema.json",
+      "content": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"id\": {\n      \"type\": \"number\"\n    },\n    \"user_id\": {\n      \"type\": \"number\"\n    },\n    \"title\": {\n      \"type\": \"string\"\n    },\n    \"body\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"id\",\n    \"user_id\",\n    \"title\",\n    \"body\"\n  ],\n  \"additionalProperties\": false\n}\n"
+    },
+    {
+      "path": "schemas/postsSchema.json",
+      "content": "{\n  \"type\": \"array\",\n  \"items\": {\n    \"$ref\": \"postSchema.json\"\n  }\n}\n"
+    }
+  ],
+  "inserts": [
+    {
+      "path": "constants/Schema.ts",
+      "before": "\n} as const;",
+      "text": ",\n    POST : \"postSchema.json\",\n    POSTS : \"postsSchema.json\""
+    }
+  ]
+}

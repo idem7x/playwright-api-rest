@@ -51,4 +51,20 @@ export default [
             "playwright/no-wait-for-timeout": "warn",
         },
     },
+    {
+        // CLI scripts of the AI-HITL tooling print to stdout by design
+        files: ["scripts/**/*.ts"],
+        rules: {
+            "no-console": "off",
+        },
+    },
+    {
+        // unit tests of the tooling use node:test, whose test() returns a promise by design;
+        // the Playwright rules do not apply to them
+        files: ["scripts/**/__tests__/**/*.ts"],
+        rules: {
+            "@typescript-eslint/no-floating-promises": "off",
+            "playwright/no-conditional-in-test": "off",
+        },
+    },
 ];
