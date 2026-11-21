@@ -1,0 +1,76 @@
+name: ai-metrics
+
+# [4] After an AI proposal PR is merged: compare each case's declared decision with what actually
+# happened to the code (snapshot vs merged spec), append to ai/metrics/hitl-log.jsonl and regenerate
+# docs/TRACEABILITY.md. Pushed to master with BOT_TOKEN; if branch protection rejects the push,
+# a chore/hitl-metrics PR is opened instead.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+concurrency:
+  group: ai-metrics
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  metrics:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'ai-generated')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+          token: ${{ secrets.BOT_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Create .env file
+        run: |
+          cat << EOF > .env
+          GO_REST_API_TOKEN=${{ secrets.GO_REST_API_TOKEN }}
+          LOG_LEVEL=info
+          CI=true
+          EOF
+
+      - name: Run generated specs (last status for the matrix)
+        continue-on-error: true
+        run: npx playwright test tests/ai
+
+      - name: Compute metrics + traceability
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          MERGED_AT: ${{ github.event.pull_request.merged_at }}
+        run: |
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          npm run ai:metrics -- --branch "$BRANCH" --body-file "$RUNNER_TEMP/pr-body.md" --merged-at "$MERGED_AT"
+          npm run ai:trace
+
+      - name: Commit to master (fallback PR)
+        env:
+          GH_TOKEN: ${{ secrets.BOT_TOKEN }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name "hitl-bot"
+          git config user.email "hitl-bot@users.noreply.github.com"
+          git add ai/metrics/hitl-log.jsonl docs/TRACEABILITY.md
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          git commit -m "chore(ai): HITL metrics + traceability for ${BRANCH#ai/}"
+          if git push origin HEAD:master; then exit 0; fi
+          echo "::warning::push to master rejected (branch protection) — opening chore/hitl-metrics PR"
+          git push --force origin HEAD:chore/hitl-metrics
+          gh pr create --base master --head chore/hitl-metrics \
+            --title "chore(ai): HITL metrics for ${BRANCH#ai/}" \
+            --body "Automated metrics + traceability update after merging ${BRANCH}." \
+            || echo "PR already exists, branch updated"
