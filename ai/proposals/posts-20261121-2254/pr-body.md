@@ -12,9 +12,9 @@
 | Model | `claude-opus-5-5 (recorded fixture)` |
 | Created | 2026-11-21T22:54:09.177Z |
 | Cases | 8 (8 automated) |
-| Run | 8 passed — 2026-11-21T22:54:11.113Z |
+| Run | 8 passed — 2026-11-21T22:54:30.897Z |
 | Coverage gaps | 1 |
-| Revisions | 0 |
+| Revisions | 1 |
 
 ### Traceability
 
@@ -38,13 +38,18 @@ here in the same format (`- **POSTS-05** — reason`), otherwise the gate fails.
 - **POSTS-08** — Ordering of the global /posts list cannot be asserted deterministically on a shared public API with concurrent writers; recommend a contract test against a private GoREST instance.
 <!-- /ai-hitl:gaps -->
 
+### Revisions
+
+- 2026-11-21T22:54:28.817Z by @dem7x: POSTS-TC-06: also assert the exact 404 message "Resource not found".
+
 ### Decisions
 
 Tick **exactly one** box per case. `reject` needs a reason after `reason:`.
+Decisions were reset for cases changed by the last revision: POSTS-TC-06.
 
 #### POSTS-TC-01 — POST - Should create post for existing user
 
-**Covers:** POSTS-01 · **Priority:** P0 · **Confidence:** high · **Run:** ✅ passed (2032 ms) · **Spec:** `tests/ai/posts.spec.ts`
+**Covers:** POSTS-01 · **Priority:** P0 · **Confidence:** high · **Run:** ✅ passed (1610 ms) · **Spec:** `tests/ai/posts.spec.ts`
 
 **Rationale:** Creates a fresh user, posts to /users/{id}/posts and checks 201, the post schema, user_id and that title/body are echoed.
 
@@ -54,7 +59,7 @@ Tick **exactly one** box per case. `reject` needs a reason after `reason:`.
 
 #### POSTS-TC-02 — POST - Should fail with 422 when title is missing
 
-**Covers:** POSTS-02 · **Priority:** P1 · **Confidence:** high · **Run:** ✅ passed (3306 ms) · **Spec:** `tests/ai/posts.spec.ts`
+**Covers:** POSTS-02 · **Priority:** P1 · **Confidence:** high · **Run:** ✅ passed (2188 ms) · **Spec:** `tests/ai/posts.spec.ts`
 
 **Rationale:** Sends only a body for an existing user and expects a 422 error list containing field "title".
 
@@ -67,7 +72,7 @@ Tick **exactly one** box per case. `reject` needs a reason after `reason:`.
 
 #### POSTS-TC-03 — POST - Should fail with 422 when user does not exist
 
-**Covers:** POSTS-03 · **Priority:** P1 · **Confidence:** high · **Run:** ✅ passed (1136 ms) · **Spec:** `tests/ai/posts.spec.ts`
+**Covers:** POSTS-03 · **Priority:** P1 · **Confidence:** high · **Run:** ✅ passed (489 ms) · **Spec:** `tests/ai/posts.spec.ts`
 
 **Rationale:** Posts to /posts with user_id 999999999 and expects 422 with field "user" / "must exist". No data is created.
 
@@ -77,7 +82,7 @@ Tick **exactly one** box per case. `reject` needs a reason after `reason:`.
 
 #### POSTS-TC-04 — POST - Should fail with 401 when unauthorized
 
-**Covers:** POSTS-04 · **Priority:** P0 · **Confidence:** high · **Run:** ✅ passed (2287 ms) · **Spec:** `tests/ai/posts.spec.ts`
+**Covers:** POSTS-04 · **Priority:** P0 · **Confidence:** high · **Run:** ✅ passed (1034 ms) · **Spec:** `tests/ai/posts.spec.ts`
 
 **Rationale:** Same request without the bearer token; expects 401 and an "Authentication failed" message. Auth is checked before the user lookup, so no user is needed.
 
@@ -87,7 +92,7 @@ Tick **exactly one** box per case. `reject` needs a reason after `reason:`.
 
 #### POSTS-TC-05 — GET - Should retrieve post by ID
 
-**Covers:** POSTS-05 · **Priority:** P1 · **Confidence:** high · **Run:** ✅ passed (2723 ms) · **Spec:** `tests/ai/posts.spec.ts`
+**Covers:** POSTS-05 · **Priority:** P1 · **Confidence:** high · **Run:** ✅ passed (2673 ms) · **Spec:** `tests/ai/posts.spec.ts`
 
 **Rationale:** Creates a post, reads it back via /posts/{id} and compares the whole object plus schema.
 
@@ -97,9 +102,9 @@ Tick **exactly one** box per case. `reject` needs a reason after `reason:`.
 
 #### POSTS-TC-06 — GET - Should return 404 for non-existent post
 
-**Covers:** POSTS-06 · **Priority:** P1 · **Confidence:** high · **Run:** ✅ passed (349 ms) · **Spec:** `tests/ai/posts.spec.ts`
+**Covers:** POSTS-06 · **Priority:** P1 · **Confidence:** high · **Run:** ✅ passed (1127 ms) · **Spec:** `tests/ai/posts.spec.ts`
 
-**Rationale:** GET /posts/999999999 must return 404 with a message, mirroring the existing user 404 test.
+**Rationale:** GET /posts/999999999 must return 404 with the exact GoREST message "Resource not found" (pinned at the reviewer's request).
 
 - [ ] accept
 - [ ] edit
@@ -107,7 +112,7 @@ Tick **exactly one** box per case. `reject` needs a reason after `reason:`.
 
 #### POSTS-TC-07 — GET - Should list only posts of the given user
 
-**Covers:** POSTS-07 · **Priority:** P2 · **Confidence:** medium · **Run:** ✅ passed (2249 ms) · **Spec:** `tests/ai/posts.spec.ts`
+**Covers:** POSTS-07 · **Priority:** P2 · **Confidence:** medium · **Run:** ✅ passed (2949 ms) · **Spec:** `tests/ai/posts.spec.ts`
 
 **Rationale:** Creates two posts for a fresh user and expects exactly those two from /users/{id}/posts (fresh user = deterministic list).
 
@@ -120,7 +125,7 @@ Tick **exactly one** box per case. `reject` needs a reason after `reason:`.
 
 #### POSTS-TC-08 — POST - Should create post via /posts with user_id in body
 
-**Covers:** POSTS-01 · **Priority:** P0 · **Confidence:** medium · **Run:** ✅ passed (1084 ms) · **Spec:** `tests/ai/posts.spec.ts`
+**Covers:** POSTS-01 · **Priority:** P0 · **Confidence:** medium · **Run:** ✅ passed (1675 ms) · **Spec:** `tests/ai/posts.spec.ts`
 
 **Rationale:** Covers the alternative endpoint from the requirement header (/posts with user_id in the body).
 

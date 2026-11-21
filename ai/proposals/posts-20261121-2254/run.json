@@ -1,40 +1,40 @@
 {
   "proposalId": "posts-20261121-2254",
-  "ranAt": "2026-11-21T22:54:11.113Z",
+  "ranAt": "2026-11-21T22:54:30.897Z",
   "command": "npx playwright test tests/ai/posts.spec.ts",
   "exitCode": 0,
   "cases": {
     "POSTS-TC-01": {
       "status": "passed",
-      "durationMs": 2032
+      "durationMs": 1610
     },
     "POSTS-TC-02": {
       "status": "passed",
-      "durationMs": 3306
+      "durationMs": 2188
     },
     "POSTS-TC-03": {
       "status": "passed",
-      "durationMs": 1136
+      "durationMs": 489
     },
     "POSTS-TC-04": {
       "status": "passed",
-      "durationMs": 2287
+      "durationMs": 1034
     },
     "POSTS-TC-05": {
       "status": "passed",
-      "durationMs": 2723
+      "durationMs": 2673
     },
     "POSTS-TC-06": {
       "status": "passed",
-      "durationMs": 349
+      "durationMs": 1127
     },
     "POSTS-TC-07": {
       "status": "passed",
-      "durationMs": 2249
+      "durationMs": 2949
     },
     "POSTS-TC-08": {
       "status": "passed",
-      "durationMs": 1084
+      "durationMs": 1675
     }
   }
 }

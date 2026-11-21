@@ -78,7 +78,7 @@
         "POSTS-06"
       ],
       "priority": "P1",
-      "rationale": "GET /posts/999999999 must return 404 with a message, mirroring the existing user 404 test.",
+      "rationale": "GET /posts/999999999 must return 404 with the exact GoREST message \"Resource not found\" (pinned at the reviewer's request).",
       "confidence": "high",
       "openQuestions": [],
       "automate": true,
@@ -121,5 +121,11 @@
       "reason": "Ordering of the global /posts list cannot be asserted deterministically on a shared public API with concurrent writers; recommend a contract test against a private GoREST instance."
     }
   ],
-  "revisions": []
+  "revisions": [
+    {
+      "at": "2026-11-21T22:54:28.817Z",
+      "by": "dem7x",
+      "instruction": "POSTS-TC-06: also assert the exact 404 message \"Resource not found\"."
+    }
+  ]
 }

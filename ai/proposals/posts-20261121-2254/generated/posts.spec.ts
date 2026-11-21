@@ -124,6 +124,7 @@ test.describe('POSTS - AI generated', () => {
 
     const body = await response.json();
     expect(body.message).toBeDefined();
+    expect(body.message).shouldEqual('Resource not found');
   });
 
   test('GET - Should list only posts of the given user', { tag: ['@ai-generated', '@req:POSTS-07', '@case:POSTS-TC-07'] }, async ({ api }) => {
