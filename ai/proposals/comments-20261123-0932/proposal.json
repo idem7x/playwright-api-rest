@@ -1,0 +1,111 @@
+{
+  "id": "comments-20261123-0932",
+  "requirementFile": "requirements/comments.md",
+  "model": "claude-sonnet-5-5",
+  "createdAt": "2026-11-23T09:32:08.900Z",
+  "cases": [
+    {
+      "caseId": "COMMENTS-TC-01",
+      "title": "POST - Should create comment for existing post",
+      "covers": [
+        "COMMENTS-01"
+      ],
+      "priority": "P0",
+      "rationale": "Creates user, then post, then a comment via /posts/{id}/comments. Asserts 201, Schema.COMMENT (id, post_id, name, email, body), and that post_id, name, email and body match what was sent.",
+      "confidence": "high",
+      "openQuestions": [],
+      "automate": true,
+      "specFile": "tests/ai/comments.spec.ts"
+    },
+    {
+      "caseId": "COMMENTS-TC-02",
+      "title": "POST - Should fail with 422 for invalid email format",
+      "covers": [
+        "COMMENTS-02"
+      ],
+      "priority": "P1",
+      "rationale": "Posts a comment with a malformed email from DataGenerator.generateInvalidEmail(). Asserts 422, Schema.ERROR, and an error for field 'email' whose message contains 'invalid'.",
+      "confidence": "medium",
+      "openQuestions": [
+        "The 'invalid' message wording is copied from the users endpoint and not confirmed for comments. Should the assertion only check that the field is 'email'?",
+        "Some malformed formats (e.g. a name with spaces) might be accepted by GoREST validation. That could make the test flaky."
+      ],
+      "automate": true,
+      "specFile": "tests/ai/comments.spec.ts"
+    },
+    {
+      "caseId": "COMMENTS-TC-03",
+      "title": "POST - Should fail with 422 when body is missing",
+      "covers": [
+        "COMMENTS-03"
+      ],
+      "priority": "P1",
+      "rationale": "Posts a comment with name and email but no body to an existing post. Asserts 422, Schema.ERROR, and an error for field 'body'.",
+      "confidence": "high",
+      "openQuestions": [],
+      "automate": true,
+      "specFile": "tests/ai/comments.spec.ts"
+    },
+    {
+      "caseId": "COMMENTS-TC-04",
+      "title": "POST - Should fail with 422 when post does not exist",
+      "covers": [
+        "COMMENTS-04"
+      ],
+      "priority": "P1",
+      "rationale": "Posts to /comments with post_id 999999999. Asserts 422, Schema.ERROR, and an error for field 'post' whose message contains 'must exist'.",
+      "confidence": "medium",
+      "openQuestions": [
+        "The 'must exist' wording is taken from the posts 'user' error and is not confirmed for comments.",
+        "The requirement names /posts/{id}/comments, but this case uses /comments with post_id in the body. A non-existent id in the nested path would likely return 404 instead of 422. Is the body variant the intended one?"
+      ],
+      "automate": true,
+      "specFile": "tests/ai/comments.spec.ts"
+    },
+    {
+      "caseId": "COMMENTS-TC-05",
+      "title": "POST - Should fail with 401 when unauthorized",
+      "covers": [
+        "COMMENTS-05"
+      ],
+      "priority": "P0",
+      "rationale": "Sends a comment POST without the bearer token. Asserts 401 and that the message contains 'authentication'. A non-existent post id is used, so no data is created.",
+      "confidence": "high",
+      "openQuestions": [
+        "Auth is checked before the post is resolved, so the non-existent post id still yields 401. This follows the posts and users tests, but is not confirmed for the nested comments path."
+      ],
+      "automate": true,
+      "specFile": "tests/ai/comments.spec.ts"
+    },
+    {
+      "caseId": "COMMENTS-TC-06",
+      "title": "GET - Should list only comments of the given post",
+      "covers": [
+        "COMMENTS-06"
+      ],
+      "priority": "P2",
+      "rationale": "Creates two posts with one comment each. GET /comments?post_id=<first> must return exactly one comment, valid against Schema.COMMENTS, with the matching post_id and id. The second post proves other posts' comments are excluded.",
+      "confidence": "medium",
+      "openQuestions": [
+        "Does ?post_id filtering work reliably on GoREST, given its pagination and caching? The test uses fresh posts, so the expected length of 1 should be deterministic."
+      ],
+      "automate": true,
+      "specFile": "tests/ai/comments.spec.ts"
+    },
+    {
+      "caseId": "COMMENTS-TC-07",
+      "title": "GET - Should return 404 for non-existent comment",
+      "covers": [
+        "COMMENTS-07"
+      ],
+      "priority": "P1",
+      "rationale": "GET /comments/999999999 must return 404. Asserts the body message equals 'Resource not found'.",
+      "confidence": "high",
+      "openQuestions": [],
+      "automate": true,
+      "specFile": "tests/ai/comments.spec.ts"
+    }
+  ],
+  "coverageGaps": [],
+  "revisions": []
+}

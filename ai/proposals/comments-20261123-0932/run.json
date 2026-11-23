@@ -1,0 +1,36 @@
+{
+  "proposalId": "comments-20261123-0932",
+  "ranAt": "2026-11-23T09:32:46.930Z",
+  "command": "npx playwright test tests/ai/comments.spec.ts",
+  "exitCode": 0,
+  "cases": {
+    "COMMENTS-TC-01": {
+      "status": "passed",
+      "durationMs": 3247
+    },
+    "COMMENTS-TC-02": {
+      "status": "passed",
+      "durationMs": 3247
+    },
+    "COMMENTS-TC-03": {
+      "status": "passed",
+      "durationMs": 3247
+    },
+    "COMMENTS-TC-04": {
+      "status": "passed",
+      "durationMs": 967
+    },
+    "COMMENTS-TC-05": {
+      "status": "passed",
+      "durationMs": 412
+    },
+    "COMMENTS-TC-06": {
+      "status": "passed",
+      "durationMs": 3298
+    },
+    "COMMENTS-TC-07": {
+      "status": "passed",
+      "durationMs": 542
+    }
+  }
+}
