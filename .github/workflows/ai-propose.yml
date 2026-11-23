@@ -1,0 +1,116 @@
+name: ai-propose
+
+# [1] A human pushes requirement changes -> Claude proposes test cases + specs -> draft PR per requirement file.
+# All logic lives in scripts/ai-hitl/propose.ts (same command as locally).
+
+on:
+  push:
+    branches: [master]
+    paths: ['requirements/**.md', '!requirements/README.md']
+  workflow_dispatch:
+    inputs:
+      requirement:
+        description: 'Requirement file, e.g. requirements/posts.md'
+        required: true
+        type: string
+      mock:
+        description: 'Use the recorded fixture instead of calling Claude (dry run)'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ai-propose-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.files.outputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: files
+        env:
+          INPUT_REQ: ${{ inputs.requirement }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          if [ -n "$INPUT_REQ" ]; then
+            list="$INPUT_REQ"
+          elif [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            list=$(git ls-files 'requirements/*.md')
+          else
+            list=$(git diff --name-only --diff-filter=AM "$BEFORE" "$AFTER" -- 'requirements/*.md')
+          fi
+          json=$(printf '%s\n' "$list" | grep -v -i '^requirements/readme.md$' | grep -E '^requirements/[a-z0-9_]+\.md$' \
+            | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "files=$json" >> "$GITHUB_OUTPUT"
+          echo "Requirement files: $json"
+
+  propose:
+    needs: detect
+    if: needs.detect.outputs.files != '[]' && needs.detect.outputs.files != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 1 # GoREST is a shared, rate-limited API
+      matrix:
+        requirement: ${{ fromJSON(needs.detect.outputs.files) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Create .env file
+        run: |
+          cat << EOF > .env
+          GO_REST_API_TOKEN=${{ secrets.GO_REST_API_TOKEN }}
+          LOG_LEVEL=info
+          CI=true
+          EOF
+
+      - name: Propose tests
+        id: propose
+        env:
+          # subscription token from `claude setup-token`
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          AI_MODEL: ${{ vars.AI_MODEL }}
+          REQ: ${{ matrix.requirement }}
+          MOCK: ${{ inputs.mock && '--mock' || '' }}
+        # MOCK is either empty or --mock; word splitting is intended
+        run: npm run ai:propose -- --req "$REQ" --max-turns 30 $MOCK
+
+      - name: Open draft PR
+        # BOT_TOKEN (fine-grained PAT: contents + pull-requests write) instead of GITHUB_TOKEN:
+        # events caused by GITHUB_TOKEN do not trigger other workflows, so a PR created with it
+        # would never run ai-gate (the required check) or playwright.yml.
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          branch: ai/${{ steps.propose.outputs.proposal-id }}
+          base: master
+          draft: true
+          labels: ai-generated,needs-human-review
+          title: 'AI test proposal: ${{ steps.propose.outputs.proposal-id }}'
+          commit-message: 'test(ai): proposal ${{ steps.propose.outputs.proposal-id }} for ${{ matrix.requirement }}'
+          body-path: ${{ steps.propose.outputs.pr-body }}
+          add-paths: |
+            tests/ai/**
+            schemas/**
+            constants/**
+            ai/proposals/${{ steps.propose.outputs.proposal-id }}/**

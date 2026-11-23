@@ -1,0 +1,25 @@
+{
+  "description": "Recorded revise output for the instruction below, applied to the posts proposal from propose-posts.json.",
+  "instruction": "POSTS-TC-06: also assert the exact 404 message \"Resource not found\".",
+  "model": "claude-opus-5-5 (recorded fixture)",
+  "cli": {
+    "type": "result",
+    "subtype": "success",
+    "is_error": false,
+    "num_turns": 4,
+    "session_id": "mock-revise-posts",
+    "result": "Added an exact message assertion to POSTS-TC-06; no other cases changed."
+  },
+  "replacements": [
+    {
+      "path": "tests/ai/posts.spec.ts",
+      "find": "      .path(`${Endpoint.POSTS}/${NON_EXISTENT_ID}`)\n      .getRequest(404);\n\n    const body = await response.json();\n    expect(body.message).toBeDefined();\n",
+      "replace": "      .path(`${Endpoint.POSTS}/${NON_EXISTENT_ID}`)\n      .getRequest(404);\n\n    const body = await response.json();\n    expect(body.message).toBeDefined();\n    expect(body.message).shouldEqual('Resource not found');\n"
+    }
+  ],
+  "casePatches": {
+    "POSTS-TC-06": {
+      "rationale": "GET /posts/999999999 must return 404 with the exact GoREST message \"Resource not found\" (pinned at the reviewer's request)."
+    }
+  }
+}

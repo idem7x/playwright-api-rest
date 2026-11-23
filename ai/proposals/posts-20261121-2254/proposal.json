@@ -1,0 +1,131 @@
+{
+  "id": "posts-20261121-2254",
+  "requirementFile": "requirements/posts.md",
+  "model": "claude-opus-5-5 (recorded fixture)",
+  "createdAt": "2026-11-21T22:54:09.177Z",
+  "cases": [
+    {
+      "caseId": "POSTS-TC-01",
+      "title": "POST - Should create post for existing user",
+      "covers": [
+        "POSTS-01"
+      ],
+      "priority": "P0",
+      "rationale": "Creates a fresh user, posts to /users/{id}/posts and checks 201, the post schema, user_id and that title/body are echoed.",
+      "confidence": "high",
+      "openQuestions": [],
+      "automate": true,
+      "specFile": "tests/ai/posts.spec.ts"
+    },
+    {
+      "caseId": "POSTS-TC-02",
+      "title": "POST - Should fail with 422 when title is missing",
+      "covers": [
+        "POSTS-02"
+      ],
+      "priority": "P1",
+      "rationale": "Sends only a body for an existing user and expects a 422 error list containing field \"title\".",
+      "confidence": "high",
+      "openQuestions": [
+        "Should the test also pin the exact message (\"can't be blank\")? It is GoREST wording and may change."
+      ],
+      "automate": true,
+      "specFile": "tests/ai/posts.spec.ts"
+    },
+    {
+      "caseId": "POSTS-TC-03",
+      "title": "POST - Should fail with 422 when user does not exist",
+      "covers": [
+        "POSTS-03"
+      ],
+      "priority": "P1",
+      "rationale": "Posts to /posts with user_id 999999999 and expects 422 with field \"user\" / \"must exist\". No data is created.",
+      "confidence": "high",
+      "openQuestions": [],
+      "automate": true,
+      "specFile": "tests/ai/posts.spec.ts"
+    },
+    {
+      "caseId": "POSTS-TC-04",
+      "title": "POST - Should fail with 401 when unauthorized",
+      "covers": [
+        "POSTS-04"
+      ],
+      "priority": "P0",
+      "rationale": "Same request without the bearer token; expects 401 and an \"Authentication failed\" message. Auth is checked before the user lookup, so no user is needed.",
+      "confidence": "high",
+      "openQuestions": [],
+      "automate": true,
+      "specFile": "tests/ai/posts.spec.ts"
+    },
+    {
+      "caseId": "POSTS-TC-05",
+      "title": "GET - Should retrieve post by ID",
+      "covers": [
+        "POSTS-05"
+      ],
+      "priority": "P1",
+      "rationale": "Creates a post, reads it back via /posts/{id} and compares the whole object plus schema.",
+      "confidence": "high",
+      "openQuestions": [],
+      "automate": true,
+      "specFile": "tests/ai/posts.spec.ts"
+    },
+    {
+      "caseId": "POSTS-TC-06",
+      "title": "GET - Should return 404 for non-existent post",
+      "covers": [
+        "POSTS-06"
+      ],
+      "priority": "P1",
+      "rationale": "GET /posts/999999999 must return 404 with the exact GoREST message \"Resource not found\" (pinned at the reviewer's request).",
+      "confidence": "high",
+      "openQuestions": [],
+      "automate": true,
+      "specFile": "tests/ai/posts.spec.ts"
+    },
+    {
+      "caseId": "POSTS-TC-07",
+      "title": "GET - Should list only posts of the given user",
+      "covers": [
+        "POSTS-07"
+      ],
+      "priority": "P2",
+      "rationale": "Creates two posts for a fresh user and expects exactly those two from /users/{id}/posts (fresh user = deterministic list).",
+      "confidence": "medium",
+      "openQuestions": [
+        "Two POSTs per run on a rate-limited shared API — is one post enough for this requirement?"
+      ],
+      "automate": true,
+      "specFile": "tests/ai/posts.spec.ts"
+    },
+    {
+      "caseId": "POSTS-TC-08",
+      "title": "POST - Should create post via /posts with user_id in body",
+      "covers": [
+        "POSTS-01"
+      ],
+      "priority": "P0",
+      "rationale": "Covers the alternative endpoint from the requirement header (/posts with user_id in the body).",
+      "confidence": "medium",
+      "openQuestions": [
+        "Is the /posts variant worth a separate test, or is TC-01 enough for POSTS-01?"
+      ],
+      "automate": true,
+      "specFile": "tests/ai/posts.spec.ts"
+    }
+  ],
+  "coverageGaps": [
+    {
+      "requirementId": "POSTS-08",
+      "reason": "Ordering of the global /posts list cannot be asserted deterministically on a shared public API with concurrent writers; recommend a contract test against a private GoREST instance."
+    }
+  ],
+  "revisions": [
+    {
+      "at": "2026-11-21T22:54:28.817Z",
+      "by": "dem7x",
+      "instruction": "POSTS-TC-06: also assert the exact 404 message \"Resource not found\"."
+    }
+  ]
+}

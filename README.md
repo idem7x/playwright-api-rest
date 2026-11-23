@@ -25,7 +25,7 @@ npx playwright install
 3. Add token to `.env`:
 
 ```env
-GOREST_TOKEN=your_token_here
+GO_REST_API_TOKEN=your_token_here
 LOG_LEVEL=info
 CI=false
 ```
@@ -44,9 +44,13 @@ npm run report         # View test report
 ├── constants/         # App constants
 ├── fixtures/          # Test fixtures
 ├── schemas/           # JSON validation schemas
-├── tests/             # Test specifications
+├── tests/             # Test specifications (tests/ai/ = AI-generated, human-reviewed)
 ├── types/             # TypeScript types
-└── utils/             # Helpers and API client
+├── utils/             # Helpers and API client
+├── requirements/      # Requirement IDs per resource (input for AI proposals)
+├── scripts/ai-hitl/   # Propose / revise / gate / metrics / traceability tooling
+├── ai/                # Proposals, snapshots, run results, HITL metrics log
+└── docs/              # HITL design + generated traceability matrix
 ```
 
 ## Test Coverage
@@ -71,6 +75,22 @@ await api
 ```typescript
 const validation = validator.validate(userSchema, responseData);
 ```
+
+## AI-assisted test generation with human review
+
+Requirements live in `requirements/*.md` with stable IDs (`POSTS-01`). On push, Claude proposes test cases and
+Playwright specs (`tests/ai/`, tagged `@ai-generated @req:<ID>`) and opens a draft PR. The repo owner can steer it
+with `@claude <instruction>` comments. A human records one decision per case (accept / edit / reject + reason), and
+the required `ai-gate` check blocks the merge until every case is decided and every requirement is covered or listed
+as a gap. After the merge, the declared decisions are compared with the code that actually changed and logged to
+`ai/metrics/hitl-log.jsonl`.
+
+```bash
+npm run ai:propose -- --req requirements/posts.md --mock   # try it without an API key
+npm run test:unit                                          # tests of the tooling
+```
+
+Details: [docs/ai-hitl.md](docs/ai-hitl.md) · Coverage: [docs/TRACEABILITY.md](docs/TRACEABILITY.md)
 
 ## License
 

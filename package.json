@@ -8,7 +8,15 @@
     "test:ui": "npx playwright test --ui",
     "report": "npx playwright show-report",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
+    "ai:propose": "tsx scripts/ai-hitl/propose.ts",
+    "ai:revise": "tsx scripts/ai-hitl/revise.ts",
+    "ai:render": "tsx scripts/ai-hitl/render-pr.ts",
+    "ai:gate": "tsx scripts/ai-hitl/gate.ts",
+    "ai:metrics": "tsx scripts/ai-hitl/metrics.ts",
+    "ai:trace": "tsx scripts/ai-hitl/traceability.ts",
+    "test:unit": "node --import tsx --test \"scripts/ai-hitl/__tests__/*.test.ts\""
   },
   "keywords": [
     "playwright",
@@ -21,15 +29,17 @@
   "devDependencies": {
     "@eslint/js": "9.39.1",
     "@faker-js/faker": "10.1.0",
-    "@playwright/test": "1.48.0",
+    "@playwright/test": "1.65.1",
     "@types/node": "22.0.0",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1",
     "dotenv": "17.2.3",
     "eslint": "9.39.1",
     "eslint-plugin-playwright": "2.3.0",
+    "tsx": "4.20.6",
     "typescript": "5.9.3",
     "typescript-eslint": "8.48.0",
-    "winston": "3.18.3"
+    "winston": "3.18.3",
+    "zod": "4.1.12"
   }
 }

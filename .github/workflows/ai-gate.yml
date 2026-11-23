@@ -1,0 +1,74 @@
+name: ai-gate
+
+# [3] Required status check for AI proposal PRs: every case has exactly one human decision
+# (accept / edit / reject + reason), every requirement is covered or listed as a gap, and the
+# generated specs lint, typecheck and run. Branch protection additionally requires 1 human approval.
+# Non-AI PRs: the job is skipped, which GitHub treats as a passing required check.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled, ready_for_review]
+    branches: [master]
+
+concurrency:
+  group: ai-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ai-gate:
+    if: contains(github.event.pull_request.labels.*.name, 'ai-generated')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests of the HITL tooling
+        run: npm run test:unit
+
+      - name: Decisions + coverage gate
+        # The body is passed through an env var into a file — never interpolated into the script.
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          npm run ai:gate -- --body-file "$RUNNER_TEMP/pr-body.md" --branch "$BRANCH"
+
+      - name: Create .env file
+        # The specs run on every event (also "edited"): a later run for the same SHA replaces the check
+        # result, so skipping them would let a body edit turn a red test run green.
+        run: |
+          cat << EOF > .env
+          GO_REST_API_TOKEN=${{ secrets.GO_REST_API_TOKEN }}
+          LOG_LEVEL=info
+          CI=true
+          EOF
+
+      - name: Run generated specs
+        run: npx playwright test tests/ai
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-gate-playwright-report
+          path: playwright-report/
+          retention-days: 14

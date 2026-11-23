@@ -1,12 +1,12 @@
 export type UserGender = 'male' | 'female';
 export type UserStatus = 'active' | 'inactive';
 
-export interface UserData {
+export type UserData = {
   name: string;
   email: string;
   gender: UserGender;
   status: UserStatus;
-}
+};
 
 export interface User extends UserData {
   id: number;
