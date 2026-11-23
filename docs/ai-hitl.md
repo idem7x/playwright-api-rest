@@ -55,7 +55,7 @@ flowchart TD
 ```bash
 npm ci
 cp .env.example .env                      # GO_REST_API_TOKEN=...
-export ANTHROPIC_API_KEY=...              # or --mock, or AI_HITL_ALLOW_CLAUDE_LOGIN=1 to reuse a `claude` login
+export CLAUDE_CODE_OAUTH_TOKEN=...        # or ANTHROPIC_API_KEY, --mock, or AI_HITL_ALLOW_CLAUDE_LOGIN=1 to reuse a `claude` login
 
 npm run ai:propose -- --req requirements/posts.md            # real Claude call (AI_MODEL / --model, --max-turns 30)
 npm run ai:propose -- --req requirements/posts.md --mock     # recorded fixture, no API key needed
@@ -127,7 +127,7 @@ revisions per proposal across the log.
 
 | Secret | Used by | Notes |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` | ai-propose, ai-revise | Claude API key |
+| `CLAUDE_CODE_OAUTH_TOKEN` | ai-propose, ai-revise | Subscription token from `claude setup-token` (usage counts against the Claude subscription). To bill the API instead, swap it for `ANTHROPIC_API_KEY` in both workflows (`anthropic_api_key:` input in ai-revise) |
 | `GO_REST_API_TOKEN` | all (spec runs) | GoREST token |
 | `BOT_TOKEN` | ai-propose, ai-revise, ai-metrics | Fine-grained PAT for this repo: **Contents: write, Pull requests: write**. A PR or push made with `GITHUB_TOKEN` does not trigger other workflows, so `ai-gate` would never run |
 

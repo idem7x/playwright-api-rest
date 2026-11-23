@@ -55,10 +55,14 @@ export function runClaude(opts: ClaudeRunOptions): ClaudeCliResult {
 
 /** Fail early with a clear message instead of letting the CLI hang on an interactive login. */
 export function assertClaudeAvailable(): void {
-  if (!process.env.ANTHROPIC_API_KEY && process.env.AI_HITL_ALLOW_CLAUDE_LOGIN !== '1') {
+  const hasCredential =
+    !!process.env.ANTHROPIC_API_KEY ||
+    !!process.env.CLAUDE_CODE_OAUTH_TOKEN ||
+    process.env.AI_HITL_ALLOW_CLAUDE_LOGIN === '1';
+  if (!hasCredential) {
     throw new Error(
-      'ANTHROPIC_API_KEY is not set. Export it, run with --mock, or set AI_HITL_ALLOW_CLAUDE_LOGIN=1 ' +
-        'to use an existing `claude` CLI login on this machine.',
+      'No Claude credential: set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`), ' +
+        'run with --mock, or set AI_HITL_ALLOW_CLAUDE_LOGIN=1 to use an existing `claude` CLI login on this machine.',
     );
   }
   const v = sh('claude', ['--version']);

@@ -87,7 +87,8 @@ jobs:
       - name: Propose tests
         id: propose
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # subscription token from `claude setup-token`
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           AI_MODEL: ${{ vars.AI_MODEL }}
           REQ: ${{ matrix.requirement }}
           MOCK: ${{ inputs.mock && '--mock' || '' }}
